@@ -6,7 +6,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
-            background-color: #1a242c; /* Il grigio scuro della foto */
+            background-color: #1a242c; 
             color: #d1d1d1;
             font-family: 'Consolas', 'Monaco', monospace;
             margin: 0;
@@ -17,75 +17,93 @@
             box-sizing: border-box;
         }
 
-        /* Header con bordi azzurri come in foto */
+        /* Header con i bordi azzurro-grigio della foto */
         #header-controls {
-            border-top: 2px solid #5a7d8c;
-            border-bottom: 2px solid #5a7d8c;
-            padding: 10px 0;
+            border-top: 1.5px solid #5a7d8c;
+            border-bottom: 1.5px solid #5a7d8c;
+            padding: 8px 0;
             margin-bottom: 5px;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        .row { margin-bottom: 4px; display: flex; align-items: center; }
-        label { width: 60px; display: inline-block; }
+        .row { margin-bottom: 3px; display: flex; align-items: center; }
+        label { width: 55px; display: inline-block; }
         
         input, select {
             background: #fff;
             border: 1px solid #000;
             font-family: monospace;
-            padding: 1px 3px;
+            padding: 1px 2px;
             color: #000;
+            font-size: 12px;
         }
 
         #enter-btn {
             background: #bdc3c7;
             border: 1px solid #000;
             cursor: pointer;
-            padding: 0 5px;
+            padding: 0 4px;
             font-family: monospace;
             margin-right: 5px;
+            font-size: 12px;
         }
 
-        /* Area messaggi */
+        /* Area messaggi identica alla foto */
         #chat-window {
             flex-grow: 1;
             overflow-y: auto;
-            margin-bottom: 10px;
+            margin-top: 5px;
         }
 
         .msg-line {
-            padding: 5px 0;
-            border-bottom: 1px solid #4a4a4a; /* Linea grigia divisoria */
-            font-size: 15px;
+            padding: 3px 0;
+            border-bottom: 1px solid #3d4b53; /* Linea divisoria sottile */
+            font-size: 14px;
             line-height: 1.2;
+            letter-spacing: 0.5px;
         }
 
         /* Colori nomi utenti */
-        .user-name { font-weight: bold; }
-        .color-W { color: #ffffff; } /* White */
-        .color-R { color: #ff3333; } /* Red */
-        .color-G { color: #33ff33; } /* Green */
-        .color-B { color: #3333ff; } /* Blue */
+        .user-name { font-weight: normal; }
+        .color-W { color: #ffffff; } 
+        .color-R { color: #ff4444; } 
+        .color-G { color: #44ff44; } 
+        .color-B { color: #5555ff; }
 
-        /* Area input in fondo */
+        /* Area input */
         #input-area {
             display: flex;
             gap: 5px;
-            padding-top: 5px;
-            border-top: 1px solid #5a7d8c;
+            padding-top: 8px;
+            border-top: 1.5px solid #5a7d8c;
         }
-        #msg-input { flex-grow: 1; background: #000; color: #fff; border: 1px solid #5a7d8c; padding: 5px; }
-        #send-btn { background: #ff3333; color: #fff; border: none; padding: 0 15px; cursor: pointer; font-weight: bold; }
+        #msg-input { 
+            flex-grow: 1; 
+            background: #000; 
+            color: #fff; 
+            border: 1px solid #5a7d8c; 
+            padding: 4px;
+            font-family: monospace;
+        }
+        #send-btn { 
+            background: #ff4444; 
+            color: #fff; 
+            border: none; 
+            padding: 0 12px; 
+            cursor: pointer; 
+            font-weight: bold;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
 
     <div id="header-controls">
-        <div class="row"><label>Name</label><input type="text" id="user-name" value="Neidhardt"></div>
+        <div class="row"><label>Name</label><input type="text" id="user-name" onchange="saveProfile()"></div>
         <div class="row">
             <label>Color</label>
-            <select id="user-color">
-                <option value="W" selected>W</option>
+            <select id="user-color" onchange="saveProfile()">
+                <option value="W">W</option>
                 <option value="R">R</option>
                 <option value="G">G</option>
                 <option value="B">B</option>
@@ -94,31 +112,49 @@
         <div class="row">
             <label>Reload</label>
             <select id="reload-time">
-                <option value="10" selected>10</option>
+                <option value="10">10</option>
                 <option value="5">5</option>
             </select>
         </div>
         <div class="row">
             <button id="enter-btn" onclick="connect()">Enter</button>
-            <span>Current members (2)</span>
+            <span id="member-status">Current members (2)</span>
         </div>
     </div>
 
-    <div id="chat-window">
-        </div>
+    <div id="chat-window"></div>
 
     <div id="input-area">
-        <input type="text" id="msg-input" placeholder="Scrivi un messaggio...">
+        <input type="text" id="msg-input" placeholder="">
         <button id="send-btn" onclick="sendMsg()">Invia</button>
     </div>
 
     <script>
-        // --- DATI DI CONNESSIONE ---
-        const SB_URL = 'https://bkdkhdrmcwazfqmvgiki.supabase.co'; 
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrZGtoZHJtY3dhemZxbXZnaWtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNzE4MjEsImV4cCI6MjA5Mzc0NzgyMX0.cuU7uAqy7jbCFSO60_oOTk6a9c2eq39lxpWGC4nHn5k'; 
+        // --- CONFIGURAZIONE ---
+        const SB_URL = 'https://IL-TUO-URL.supabase.co'; 
+        const SB_KEY = 'LA-TUA-ANON-KEY'; 
 
-        // Inizializziamo con un nome diverso per evitare l'errore "redeclaration"
         const sbClient = supabase.createClient(SB_URL, SB_KEY);
+        const chatWindow = document.getElementById('chat-window');
+
+        // FUNZIONE PER CARICARE I DATI SALVATI (COOKIE-LIKE)
+        function loadProfile() {
+            const savedName = localStorage.getItem('chat-name');
+            const savedColor = localStorage.getItem('chat-color');
+            
+            if (savedName) document.getElementById('user-name').value = savedName;
+            else document.getElementById('user-name').value = "Neidhardt"; // Default se vuoto
+
+            if (savedColor) document.getElementById('user-color').value = savedColor;
+        }
+
+        // FUNZIONE PER SALVARE I DATI
+        function saveProfile() {
+            const name = document.getElementById('user-name').value;
+            const color = document.getElementById('user-color').value;
+            localStorage.setItem('chat-name', name);
+            localStorage.setItem('chat-color', color);
+        }
 
         async function loadMessages() {
             const { data, error } = await sbClient
@@ -126,12 +162,8 @@
                 .select('*')
                 .order('created_at', { ascending: true });
 
-            if (error) {
-                console.error("Errore caricamento:", error);
-                return;
-            }
+            if (error) return;
 
-            const chatWindow = document.getElementById('chat-window');
             chatWindow.innerHTML = data.map(m => `
                 <div class="msg-line">
                     <span class="user-name color-${m.color}">${m.name}</span>: ${m.content}
@@ -147,31 +179,33 @@
 
             if (!content.trim()) return;
 
+            // Salviamo il profilo prima dell'invio per sicurezza
+            saveProfile();
+
             const { error } = await sbClient
                 .from('messages')
                 .insert([{ name, color, content }]);
 
-            if (error) {
-                alert("Errore nell'invio!");
-            } else {
+            if (!error) {
                 document.getElementById('msg-input').value = '';
                 loadMessages();
             }
         }
 
         function connect() {
+            saveProfile(); // Salva quando clicchi Enter
             loadMessages();
             const sec = document.getElementById('reload-time').value;
             setInterval(loadMessages, sec * 1000);
-            alert("Chat connessa!");
+            alert("Sincronizzazione attivata.");
         }
 
-        // Invio con tasto Enter
         document.getElementById('msg-input').addEventListener("keypress", (e) => {
             if (e.key === "Enter") sendMsg();
         });
 
-        // Caricamento iniziale
+        // Eseguiamo al caricamento
+        loadProfile();
         loadMessages();
     </script>
 </body>
