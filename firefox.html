@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>New Tab</title> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body {
+            background-color: #000; color: #d1d1d1;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column;
+            height: 100vh; height: -webkit-fill-available;
+            overflow: hidden; position: fixed; width: 100%;
+        }
+
+        /* --- STILI CHAT ESISTENTI --- */
+        #header-controls { background: #1a242c; border-top: 2px solid #5a7d8c; border-bottom: 2px solid #5a7d8c; padding: 8px 10px; flex-shrink: 0; }
+        .controls-grid { display: flex; flex-direction: column; gap: 4px; max-width: 280px; }
+        .row { display: flex; align-items: center; }
+        label { width: 60px; font-size: 12px; color: #fff; }
+        input, select { background: #fff; border: 1px solid #000; padding: 0 4px; font-size: 13px; height: 20px; font-family: inherit; }
+        .status-container { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        #enter-btn { background: #bdc3c7; border: 1px solid #000; cursor: pointer; padding: 0 10px; font-size: 12px; height: 22px; color: #000; font-family: inherit; }
+        #status-text { color: #fff; font-size: 13px; text-transform: lowercase; }
+        #chat-window { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; background-color: #000; -webkit-overflow-scrolling: touch; }
+        .msg-line { padding: 4px 0; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
+        .user-name { font-weight: bold; }
+        .color-W { color: #ffffff !important; } .color-R { color: #ff4444 !important; }
+        .color-G { color: #44ff44 !important; } .color-B { color: #5555ff !important; }
+        #input-area { flex-shrink: 0; display: flex; gap: 8px; padding: 10px; border-top: 2px solid #5a7d8c; background: #000; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+        #msg-input { flex-grow: 1; background: #111; color: #fff; border: 1px solid #5a7d8c; padding: 10px; font-size: 16px; font-family: inherit; }
+        #send-btn { background: #ff4444; color: #fff; border: none; padding: 0 15px; cursor: pointer; font-weight: bold; font-family: inherit; }
+
+        /* --- STILE FINTA HOME FIREFOX --- */
+        #camouflage-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #2b2a33; /* Grigio Firefox */
+            z-index: 9999; display: none; /* Nascosto di default */
+            flex-direction: column; align-items: center; justify-content: center;
+            color: white; font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        #fake-search-container { width: 100%; max-width: 600px; text-align: center; }
+        #firefox-logo { width: 80px; margin-bottom: 20px; opacity: 0.9; }
+        #fake-search-bar {
+            width: 90%; padding: 12px 20px; border-radius: 8px;
+            border: none; background: #42414d; color: #fff;
+            font-size: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        #fake-icons {
+            display: flex; gap: 20px; margin-top: 40px; flex-wrap: wrap; justify-content: center;
+        }
+        .fake-icon {
+            display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 11px; opacity: 0.8;
+        }
+        .icon-circle {
+            width: 48px; height: 48px; background: #42414d; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="camouflage-overlay">
+        <div id="fake-search-container">
+            <img id="firefox-logo" src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" alt="fox">
+            <input type="text" id="fake-search-bar" placeholder="Search with DuckDuckGo or enter address">
+        </div>
+        <div id="fake-icons">
+            <div class="fake-icon"><div class="icon-circle" style="background:#ff9900">a</div>Amazon</div>
+            <div class="fake-icon"><div class="icon-circle" style="background:#ff4400">T</div>Temu</div>
+            <div class="fake-icon"><div class="icon-circle" style="background:#e60012">A</div>AliExpress</div>
+            <div class="fake-icon"><div class="icon-circle" style="background:#ff0000">Y</div>YouTube</div>
+            <div class="fake-icon"><div class="icon-circle" style="background:#0066ff">L</div>Linee urbane</div>
+            <div class="fake-icon"><div class="icon-circle" style="background:#000">K</div>Kiri Kiri</div>
+            <div class="fake-icon"><div class="icon-circle" style="background:#c13584">I</div>Instagram</div>
+        </div>
+    </div>
+
+    <div id="header-controls">
+        <div class="controls-grid">
+            <div class="row"><label>Name</label><input type="text" id="user-name" spellcheck="false"></div>
+            <div class="row">
+                <label>Color</label>
+                <select id="user-color">
+                    <option value="W">White</option><option value="R">Red</option>
+                    <option value="G">Green</option><option value="B">Blue</option>
+                </select>
+            </div>
+            <div class="row">
+                <label>Reload</label>
+                <select id="msg-limit" onchange="window.loadMessages()">
+                    <option value="10">10</option><option value="50">50</option>
+                    <option value="100">100</option><option value="1000">All</option>
+                </select>
+            </div>
+            <div class="status-container">
+                <button id="enter-btn" onclick="window.requestAccess()">Enter</button>
+                <span id="status-text">offline</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-window"></div>
+
+    <div id="input-area">
+        <input type="text" id="msg-input" placeholder="Type a message...">
+        <button id="send-btn" onclick="window.sendMsg()">Send</button>
+    </div>
+
+    <script>
+        let sbClient = null;
+        let chatChannel = null;
+        let unreadCount = 0;
+        let isFocused = true;
+
+        // --- GESTIONE CAMOUFLAGE ---
+        const overlay = document.getElementById('camouflage-overlay');
+        const fakeSearch = document.getElementById('fake-search-bar');
+
+        window.onblur = () => {
+            isFocused = false;
+            overlay.style.display = 'flex';
+        };
+
+        // Torna alla chat se fai una ricerca (premi Enter)
+        fakeSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                overlay.style.display = 'none';
+                fakeSearch.value = '';
+                isFocused = true;
+                unreadCount = 0;
+                updateTitle();
+            }
+        });
+
+        window.onfocus = () => {
+            // Non togliamo l'overlay automaticamente per sicurezza,
+            // ma resettiamo il counter notifiche se l'overlay non c'è
+            isFocused = true;
+            if (overlay.style.display === 'none') {
+                unreadCount = 0;
+                updateTitle();
+            }
+        };
+
+        function updateTitle() {
+            if (unreadCount > 0) {
+                document.title = `(${unreadCount}) New Tab`;
+            } else {
+                document.title = "New Tab";
+            }
+        }
+
+        // --- LOGICA CHAT ---
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        window.requestAccess = async function() {
+            const input = prompt("Enter Database Password:");
+            if (input) {
+                const hashedInput = await sha256(input);
+                if (hashedInput === CONFIG.PASS_HASH) {
+                    localStorage.setItem('app-auth-session', hashedInput);
+                    window.initApp();
+                } else { alert("Wrong Password."); }
+            }
+        };
+
+        window.initApp = function() {
+            const sessionHash = localStorage.getItem('app-auth-session');
+            if (sessionHash !== CONFIG.PASS_HASH) return;
+            sbClient = supabase.createClient(CONFIG.SB_URL, CONFIG.SB_KEY);
+            window.loadMessages();
+            initRealtime();
+        };
+
+        window.loadMessages = async function() {
+            if (!sbClient) return;
+            const limit = parseInt(document.getElementById('msg-limit').value) || 10;
+            const { data, error } = await sbClient.from('messages').select('*').order('created_at', { ascending: false }).limit(limit);
+            if (!error) renderMessages(data);
+        };
+
+        function initRealtime() {
+            if (chatChannel) sbClient.removeChannel(chatChannel);
+            const sessionID = Math.random().toString(36).substring(7);
+            chatChannel = sbClient.channel('room-1', { config: { presence: { key: sessionID } } });
+
+            chatChannel
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    addSingleMsg(payload.new);
+                    // NOTIFICA SE NON FOCUS O CAMOUFLAGE ATTIVO
+                    if (!isFocused || overlay.style.display === 'flex') {
+                        unreadCount++;
+                        updateTitle();
+                    }
+                })
+                .on('presence', { event: 'sync' }, () => {
+                    const count = Object.keys(chatChannel.presenceState()).length;
+                    document.getElementById('status-text').innerText = `current members (${count})`;
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await chatChannel.track({ name: document.getElementById('user-name').value });
+                    }
+                });
+        }
+
+        function renderMessages(data) {
+            document.getElementById('chat-window').innerHTML = data.map(m => `
+                <div class="msg-line color-${m.color}"><span class="user-name">${m.name}</span>: ${m.content}</div>
+            `).join('');
+        }
+
+        function addSingleMsg(m) {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.className = `msg-line color-${m.color}`;
+            div.innerHTML = `<span class="user-name">${m.name}</span>: ${m.content}`;
+            win.prepend(div);
+        }
+
+        window.sendMsg = async function() {
+            const content = document.getElementById('msg-input').value;
+            if (!content.trim() || !sbClient) return;
+            await sbClient.from('messages').insert([{
+                name: document.getElementById('user-name').value,
+                color: document.getElementById('user-color').value,
+                content
+            }]);
+            document.getElementById('msg-input').value = '';
+        };
+
+        window.loadProfile = () => {
+            document.getElementById('user-name').value = localStorage.getItem('chat-name') || "user";
+            document.getElementById('user-color').value = localStorage.getItem('chat-color') || "W";
+        };
+        window.saveProfile = () => {
+            localStorage.setItem('chat-name', document.getElementById('user-name').value);
+            localStorage.setItem('chat-color', document.getElementById('user-color').value);
+        };
+
+        document.getElementById('user-name').addEventListener("change", window.saveProfile);
+        document.getElementById('user-color').addEventListener("change", window.saveProfile);
+        document.getElementById('msg-input').addEventListener("keypress", e => { if(e.key === "Enter") window.sendMsg(); });
+
+        window.loadProfile();
+        window.initApp();
+    </script>
+</body>
+</html>
